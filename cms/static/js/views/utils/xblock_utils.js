@@ -73,13 +73,23 @@ define(["jquery", "underscore", "gettext", "common/js/components/utils/view_util
         deleteXBlock = function(xblockInfo, xblockType) {
             var deletion = $.Deferred(),
                 url = ModuleUtils.getUpdateUrl(xblockInfo.id),
-                xblockType = xblockType || gettext('component');
+                additionalHeaderText = '',
+                additionalBodyText = '';
+            xblockType = xblockType || gettext('component');
+            if (xblockInfo.get('is_prereq')) {
+                additionalHeaderText = gettext(' (and prerequisite)');
+                additionalBodyText = gettext(
+                    ' Any content that has listed this content as a prerequisite ' +
+                    'will also have access limitations removed.'
+                );
+            }
             ViewUtils.confirmThenRunOperation(
-                interpolate(gettext('Delete this %(xblock_type)s?'), { xblock_type: xblockType }, true),
                 interpolate(
-                    gettext('Deleting this %(xblock_type)s is permanent and cannot be undone.'),
-                    { xblock_type: xblockType }, true
-                ),
+                    gettext('Delete this %(xblock_type)s%(additionalText)s?'),
+                    { xblock_type: xblockType, additionalText: additionalHeaderText }, true),
+                interpolate(
+                    gettext('Deleting this %(xblock_type)s is permanent and cannot be undone.%(additionalText)s'),
+                    { xblock_type: xblockType, additionalText: additionalBodyText }, true),
                 interpolate(gettext('Yes, delete this %(xblock_type)s'), { xblock_type: xblockType }, true),
                 function() {
                     ViewUtils.runOperationShowingMessage(gettext('Deleting'),

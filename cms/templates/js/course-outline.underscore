@@ -2,9 +2,21 @@
 var releasedToStudents = xblockInfo.get('released_to_students');
 var visibilityState = xblockInfo.get('visibility_state');
 var published = xblockInfo.get('published');
+var prereq = xblockInfo.get('prereq');
 
 var statusMessage = null;
 var statusType = null;
+if (prereq) {
+    var prereqDisplayName = '';
+    _.each(xblockInfo.get('prereqs'), function (p) {
+        if (p.block_usage_key == prereq) {
+            prereqDisplayName = p.block_display_name;
+            return false;
+        }
+    });
+    statusType = 'staff-only';
+    statusMessage = gettext('Prerequisite: ' + prereqDisplayName);
+}
 if (staffOnlyMessage) {
     statusType = 'staff-only';
     statusMessage = gettext('Contains staff only content');

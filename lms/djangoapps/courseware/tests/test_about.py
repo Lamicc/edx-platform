@@ -23,9 +23,9 @@ from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
 from xmodule.modulestore.tests.factories import CourseFactory, ItemFactory
 from util.milestones_helpers import (
     set_prerequisite_courses,
-    seed_milestone_relationship_types,
     get_prerequisite_courses_display,
 )
+from milestones.tests.utils import MilestonesTestCaseMixin
 
 from .helpers import LoginEnrollmentTestCase
 
@@ -35,7 +35,7 @@ SHIB_ERROR_STR = "The currently logged-in user account does not have permission 
 
 
 @attr('shard_1')
-class AboutTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, EventTrackingTestCase):
+class AboutTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, EventTrackingTestCase, MilestonesTestCaseMixin):
     """
     Tests about xblock.
     """
@@ -130,7 +130,6 @@ class AboutTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, EventTrackingT
 
     @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True, 'MILESTONES_APP': True})
     def test_pre_requisite_course(self):
-        seed_milestone_relationship_types()
         pre_requisite_course = CourseFactory.create(org='edX', course='900', display_name='pre requisite course')
         course = CourseFactory.create(pre_requisite_courses=[unicode(pre_requisite_course.id)])
         self.setup_user()
@@ -145,7 +144,6 @@ class AboutTestCase(LoginEnrollmentTestCase, ModuleStoreTestCase, EventTrackingT
 
     @patch.dict(settings.FEATURES, {'ENABLE_PREREQUISITE_COURSES': True, 'MILESTONES_APP': True})
     def test_about_page_unfulfilled_prereqs(self):
-        seed_milestone_relationship_types()
         pre_requisite_course = CourseFactory.create(
             org='edX',
             course='900',

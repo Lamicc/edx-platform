@@ -256,17 +256,6 @@ def is_valid_course_key(key):
     return isinstance(course_key, CourseKey)
 
 
-def seed_milestone_relationship_types():
-    """
-    Helper method to pre-populate MRTs so the tests can run
-    """
-    if not settings.FEATURES.get('MILESTONES_APP', False):
-        return None
-    from milestones.models import MilestoneRelationshipType
-    MilestoneRelationshipType.objects.create(name='requires')
-    MilestoneRelationshipType.objects.create(name='fulfills')
-
-
 def generate_milestone_namespace(namespace, course_key=None):
     """
     Returns a specifically-formatted namespace string for the specified type

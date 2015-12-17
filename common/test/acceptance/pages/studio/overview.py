@@ -538,11 +538,12 @@ class CourseOutlinePage(CoursePage, CourseOutlineContainer):
         """
         self.reindex_button.click()
 
-    def open_exam_settings_dialog(self):
+    def open_subsection_settings_dialog(self, index=0):
         """
         clicks on the settings button of subsection.
         """
-        self.q(css=".subsection-header-actions .configure-button").first.click()
+        self.q(css=".subsection-header-actions .configure-button").nth(index).click()
+        self.wait_for_element_presence('.course-outline-modal', 'Subsection settings modal is present.')
 
     def change_problem_release_date_in_studio(self):
         """
@@ -553,12 +554,12 @@ class CourseOutlinePage(CoursePage, CourseOutlineContainer):
         self.q(css=".action-save").first.click()
         self.wait_for_ajax()
 
-    def select_advanced_settings_tab(self):
+    def select_advanced_tab(self):
         """
         Select the advanced settings tab
         """
-        self.q(css=".advanced-settings-button").first.click()
-        self.wait_for_element_presence('#id_not_timed', 'Advanced settings fields not present.')
+        self.q(css=".settings-tab-button[data-tab='advanced']").first.click()
+        self.wait_for_element_presence('#id_not_timed', 'Special exam settings fields not present.')
 
     def make_exam_proctored(self):
         """
@@ -631,6 +632,75 @@ class CourseOutlinePage(CoursePage, CourseOutlineContainer):
 
         # The Practice exam radio button
         if not self.q(css="#id_practice_exam").present:
+            return False
+
+        return True
+
+    def select_access_tab(self):
+        """
+        Select the access settings tab.
+        """
+        self.q(css=".settings-tab-button[data-tab='access']").first.click()
+        self.wait_for_element_visibility('#is_prereq', 'Gating settings fields are present.')
+
+    def make_gating_prerequisite(self):
+        """
+        Makes a subsection a gating prerequisite.
+        """
+        if not self.q(css="#is_prereq")[0].is_selected():
+            self.q(css='label[for="is_prereq"]').click()
+        self.q(css=".action-save").first.click()
+        self.wait_for_ajax()
+
+    def add_prerequisite_to_subsection(self, min_score):
+        """
+        Adds a prerequisite to a subsection.
+        """
+        Select(self.q(css="#prereq")[0]).select_by_index(1)
+        self.q(css="#prereq_min_score").fill(min_score)
+        self.q(css=".action-save").first.click()
+        self.wait_for_ajax()
+
+    def gating_prerequisite_checkbox_is_visible(self):
+        """
+        Returns True if the gating prerequisite checkbox is visible.
+        """
+
+        # The Prerequisite checkbox is visible
+        if not self.q(css="#is_prereq").visible:
+            return False
+
+        return True
+
+    def gating_prerequisite_checkbox_is_checked(self):
+        """
+        Returns True if the gating prerequisite checkbox is checked.
+        """
+
+        # The Prerequisite checkbox is checked
+        if not self.q(css="#is_prereq:checked").present:
+            return False
+
+        return True
+
+    def gating_prerequisites_dropdown_is_visible(self):
+        """
+        Returns True if the gating prerequisites dropdown is visible.
+        """
+
+        # The Prerequisites dropdown is visible
+        if not self.q(css="#prereq").visible:
+            return False
+
+        return True
+
+    def gating_prerequisite_min_score_is_visible(self):
+        """
+        Returns True if the gating prerequisite minimum score input is visible.
+        """
+
+        # The Prerequisites dropdown is visible
+        if not self.q(css="#prereq_min_score").visible:
             return False
 
         return True
