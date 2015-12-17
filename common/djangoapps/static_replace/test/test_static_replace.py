@@ -85,21 +85,23 @@ def test_storage_url_not_exists(mock_storage):
 
 @patch('static_replace.StaticContent', autospec=True)
 @patch('static_replace.modulestore', autospec=True)
-def test_mongo_filestore(mock_modulestore, mock_static_content):
+@patch('static_replace.AssetBaseUrlConfig.get_base_url')
+def test_mongo_filestore(mock_get_base_url, mock_modulestore, mock_static_content):
 
     mock_modulestore.return_value = Mock(MongoModuleStore)
-    mock_static_content.convert_legacy_static_url_with_course_id.return_value = "c4x://mock_url"
+    mock_static_content.get_canonicalized_asset_path.return_value = "c4x://mock_url"
+    mock_get_base_url.return_value = u''
 
     # No namespace => no change to path
     assert_equals('"/static/data_dir/file.png"', replace_static_urls(STATIC_SOURCE, DATA_DIRECTORY))
 
     # Namespace => content url
     assert_equals(
-        '"' + mock_static_content.convert_legacy_static_url_with_course_id.return_value + '"',
+        '"' + mock_static_content.get_canonicalized_asset_path.return_value + '"',
         replace_static_urls(STATIC_SOURCE, DATA_DIRECTORY, course_id=COURSE_KEY)
     )
 
-    mock_static_content.convert_legacy_static_url_with_course_id.assert_called_once_with('file.png', COURSE_KEY)
+    mock_static_content.get_canonicalized_asset_path.assert_called_once_with(COURSE_KEY, 'file.png', u'')
 
 
 @patch('static_replace.settings', autospec=True)
