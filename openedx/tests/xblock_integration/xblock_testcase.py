@@ -15,7 +15,7 @@ At this point, we support:
 4. Testing multiple XBloccks on the same page.
 
 We have spec'ed out how to do acceptance testing, but have not
-implemented itt yet. We have not spec'ed out JavaScript testing,
+implemented it yet. We have not spec'ed out JavaScript testing,
 but believe it is important.
 
 We do not intend to spec out XBlock/edx-platform integration testing
@@ -28,11 +28,9 @@ either in this framework or another.
 
 Our next steps would be to:
 * Finish this framework
-* Move tests into the XBlocks themselves
-* Run tests via entrypoints
-  - Have an appropriate test to make sure those tests are likely
-    running for standard XBlocks (e.g. assert those entry points
-    exist)
+* Have an appropriate test to make sure those tests are likely
+  running for standard XBlocks (e.g. assert those entry points
+  exist)
 """
 
 import collections
@@ -87,11 +85,14 @@ class XBlockEventTestMixin(object):
     """
     def setUp(self):
         """
-        We patch runtime.publish to capture all XBlock events sent during the test.
+        We patch runtime.publish to capture all XBlock events sent during
+        the test.
 
-        This is a little bit ugly -- it's all dynamic -- so we patch __init__ for the
-        system runtime to capture the dynamically-created publish, and catch whatever
-        is being passed into it.
+        This is a little bit ugly -- it's all dynamic -- so we patch
+        __init__ for the system runtime to capture the
+        dynamically-created publish, and catch whatever is being
+        passed into it.
+
         """
         saved_init = lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__
 
@@ -112,17 +113,20 @@ class XBlockEventTestMixin(object):
 
         super(XBlockEventTestMixin, self).setUp()
         self.events = []
-        patcher = mock.patch("lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__", patched_init)
+        lms_sys = "lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__"
+        patcher = mock.patch(lms_sys, patched_init)
         patcher.start()
         self.addCleanup(patcher.stop)
 
     def assert_no_events_published(self, event_type):
         """
-        Ensures no events of a given type were published since the last event related assertion.
+        Ensures no events of a given type were published since the last
+        event related assertion.
 
         We are relatively specific since things like implicit HTTP
         events almost always do get omitted, and new event types get
         added all the time. This is not useful without a filter.
+
         """
         for event in self.events:
             self.assertNotEqual(event['event_type'], event_type)
@@ -146,7 +150,8 @@ class XBlockEventTestMixin(object):
                         found = False
                 if found:
                     return
-        self.assertIn({'event_type': event_type, 'event': event_fields}, self.events)
+        self.assertIn({'event_type': event_type,'event': event_fields},
+                      self.events)
 
     def reset_published_events(self):
         """
@@ -157,8 +162,9 @@ class XBlockEventTestMixin(object):
 
 class GradePublishTestMixin(object):
     '''
-    This checks whether a grading event was correctly published. This puts basic
-    plumbing in place, but we would like to:
+    This checks whether a grading event was correctly published. This
+    puts basic plumbing in place, but we would like to:
+
     * Add search parameters. Is it for the right block? The right user? This
       only handles the case of one block/one user right now.
     * Check end-to-end. We would like to see grades in the database, not just
@@ -170,6 +176,7 @@ class GradePublishTestMixin(object):
     usage key).
 
     We could also use the runtime.publish logic above, now that we have it.
+
     '''
     def setUp(self):
         '''
@@ -190,7 +197,8 @@ class GradePublishTestMixin(object):
         super(GradePublishTestMixin, self).setUp()
 
         self.scores = []
-        patcher = mock.patch("courseware.module_render.set_score", capture_score)
+        patcher = mock.patch("courseware.module_render.set_score",
+                             capture_score)
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -267,11 +275,11 @@ class XBlockStudentTestCaseMixin(object):
 
     def setUp(self):
         """
-        Create users accounts. The first three, we give helpful names to. If
-        there are any more, we auto-generate number IDs. We intentionally use
-        slightly different conventions for different users, so we exercise
-        more corner cases, but we could standardize if this is more hassle than
-        it's worth.
+        Create users accounts. The first three, we give helpful names
+        to. If there are any more, we auto-generate number IDs. We
+        intentionally use slightly different conventions for different
+        users, so we exercise more corner cases, but we could
+        standardize if this is more hassle than it's worth.
         """
         super(XBlockStudentTestCaseMixin, self).setUp()
         for idx, student in enumerate(self.student_list):
@@ -314,7 +322,8 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
                      LoginEnrollmentTestCase,
                      Plugin):
     """
-    Class for all XBlock-internal test cases (as opposed to integration tests).
+    Class for all XBlock-internal test cases (as opposed to
+    integration tests).
     """
     test_configuration = None  # Children must override this!
 
@@ -342,7 +351,8 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
         """
         return reverse('xblock_handler', kwargs={
             'course_id': unicode(self.course.id),
-            'usage_id': unicode(self.course.id.make_usage_key('done', xblock_name)),
+            'usage_id': unicode(self.course.id.make_usage_key('done',
+                                                              xblock_name)),
             'handler': handler,
             'suffix': ''
         })
