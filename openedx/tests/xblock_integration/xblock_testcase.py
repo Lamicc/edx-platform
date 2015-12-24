@@ -36,6 +36,7 @@ Our next steps would be to:
 import collections
 import json
 import mock
+import sys
 import unittest
 
 from xblock.plugin import Plugin
@@ -94,6 +95,8 @@ class XBlockEventTestMixin(object):
         passed into it.
 
         """
+        super(XBlockEventTestMixin, self).setUp()
+        print >> sys.stderr, "Setup XBETM"
         saved_init = lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__
 
         def patched_init(runtime_self, **kwargs):
@@ -111,7 +114,6 @@ class XBlockEventTestMixin(object):
             kwargs['publish'] = publish
             return saved_init(runtime_self, **kwargs)
 
-        super(XBlockEventTestMixin, self).setUp()
         self.events = []
         lms_sys = "lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__"
         patcher = mock.patch(lms_sys, patched_init)
@@ -182,6 +184,8 @@ class GradePublishTestMixin(object):
         '''
         Hot-patch the grading emission system to capture grading events.
         '''
+        super(GradePublishTestMixin, self).setUp()
+        print >> sys.stderr, "Setup GPTM"
         def capture_score(user_id, usage_key, score, max_score):
             '''
             Hot-patch which stores scores in a local array instead of the
@@ -194,7 +198,6 @@ class GradePublishTestMixin(object):
                                 'score': score,
                                 'max_score': max_score})
 
-        super(GradePublishTestMixin, self).setUp()
 
         self.scores = []
         patcher = mock.patch("courseware.module_render.set_score",
@@ -222,6 +225,7 @@ class XBlockScenarioTestCaseMixin(object):
         Create a page with two of the XBlock on it
         """
         super(XBlockScenarioTestCaseMixin, cls).setUpClass()
+        print >> sys.stderr, "Setup Scen"
 
         cls.course = CourseFactory.create(
             display_name='XBlock_Test_Course'
@@ -282,10 +286,12 @@ class XBlockStudentTestCaseMixin(object):
         standardize if this is more hassle than it's worth.
         """
         super(XBlockStudentTestCaseMixin, self).setUp()
+        print >> sys.stderr, "Setup Stud"
         for idx, student in enumerate(self.student_list):
             username = "u{}".format(idx)
             self._enroll_user(username, student['email'], student['password'])
         self.select_student(0)
+        self.enroll(self.course, verify=True)
 
     def _enroll_user(self, username, email, password):
         '''
@@ -299,19 +305,20 @@ class XBlockStudentTestCaseMixin(object):
         Select a current user account
         """
         # If we don't have enough users, add a few more...
-        for user_id in range(len(self.student_list), user_id):
-            username = "user_{i}".format(i=user_id)
-            email = "user_{i}@example.edx.org".format(i=user_id)
+        for newuser_id in range(len(self.student_list), user_id):
+            username = "user_{i}".format(i=newuser_id)
+            email = "user_{i}@example.edx.org".format(i=newuser_id)
             password = "12345"
             self._enroll_user(username, email, password)
             self.student_list.append({'email': email, 'password': password})
+            self.enroll(self.course, verify=True)
 
         email = self.student_list[user_id]['email']
         password = self.student_list[user_id]['password']
 
         # ... and log in as the appropriate user
+        print >>sys.stderr, user_id, email, password
         self.login(email, password)
-        self.enroll(self.course, verify=True)
 
 
 class XBlockTestCase(XBlockStudentTestCaseMixin,
@@ -401,10 +408,13 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
         '''
         section = self._containing_section(block_urlname)
         html_response = collections.namedtuple('HtmlResponse',
-                                               ['status_code'])
+                                               ['status_code',
+                                                'content'])
         url = self.scenario_urls[section]
         response = self.client.get(url)
         html_response.status_code = response.status_code
+        html_response.content = response.content
+        print response.content
         return html_response
 
     def _containing_section(self, block_urlname):
