@@ -29,6 +29,7 @@ from path import Path as path
 import json
 import re
 from lxml import etree
+import copy
 
 from xmodule.modulestore.xml import XMLModuleStore, LibraryXMLModuleStore, ImportSystem
 from xblock.runtime import KvsFieldData, DictKeyValueStore
@@ -376,6 +377,8 @@ class ImportManager(object):
         Recursively imports all child blocks from the temporary modulestore into the
         target modulestore.
         """
+        existing_blocks = set(self.store.get_items(dest_id))
+        created_blocks = set()
         all_locs = set(self.xml_module_store.modules[courselike_key].keys())
         all_locs.remove(source_courselike.location)
 
@@ -394,7 +397,8 @@ class ImportManager(object):
                     if self.verbose:
                         log.debug('importing module location %s', child.location)
 
-                    _update_and_import_module(
+                    created_blocks.add(
+                        _update_and_import_module(
                         child,
                         self.store,
                         self.user_id,
@@ -402,6 +406,7 @@ class ImportManager(object):
                         dest_id,
                         do_import_static=self.do_import_static,
                         runtime=courselike.runtime,
+                        )
                     )
 
                     depth_first(child)
@@ -412,15 +417,20 @@ class ImportManager(object):
             if self.verbose:
                 log.debug('importing module location %s', leftover)
 
-            _update_and_import_module(
-                self.xml_module_store.get_item(leftover),
-                self.store,
-                self.user_id,
-                courselike_key,
-                dest_id,
-                do_import_static=self.do_import_static,
-                runtime=courselike.runtime,
+            created_blocks.add(
+                _update_and_import_module(
+                    self.xml_module_store.get_item(leftover),
+                    self.store,
+                    self.user_id,
+                    courselike_key,
+                    dest_id,
+                    do_import_static=self.do_import_static,
+                    runtime=courselike.runtime,
+                )
             )
+        orphans = existing_blocks - created_blocks
+        for orphan in orphans:
+            self.store.delete_item(orphan.location, self.user_id)
 
     def run_imports(self):
         """
