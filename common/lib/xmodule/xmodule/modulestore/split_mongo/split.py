@@ -83,6 +83,7 @@ from ..exceptions import ItemNotFoundError
 from .caching_descriptor_system import CachingDescriptorSystem
 from xmodule.modulestore.split_mongo.mongo_connection import MongoConnection, DuplicateKeyError
 from xmodule.modulestore.split_mongo import BlockKey, CourseEnvelope
+from xmodule.modulestore.mongo.base import _DETACHED_CATEGORIES
 from xmodule.error_module import ErrorDescriptor
 from collections import defaultdict
 from types import NoneType
@@ -1197,15 +1198,13 @@ class SplitMongoModuleStore(SplitBulkWriteMixin, ModuleStoreWriteBase):
         if 'category' in qualifiers:
             qualifiers['block_type'] = qualifiers.pop('category')
 
-        detached_categories = [name for name, __ in XBlock.load_tagged_classes("detached")]
-
         # don't expect caller to know that children are in fields
         if 'children' in qualifiers:
             settings['children'] = qualifiers.pop('children')
         for block_id, value in course.structure['blocks'].iteritems():
             if _block_matches_all(value):
                 if not include_orphans:
-                    if self.has_path_to_root(block_id, course) or block_id.type in detached_categories:
+                    if block_id.type in _DETACHED_CATEGORIES or self.has_path_to_root(block_id, course):
                         items.append(block_id)
                 else:
                     items.append(block_id)
