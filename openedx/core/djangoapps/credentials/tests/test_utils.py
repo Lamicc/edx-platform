@@ -1,4 +1,5 @@
 """Tests covering Credentials utilities."""
+from django.core.cache import cache
 from django.test import TestCase
 import httpretty
 import mock
@@ -30,6 +31,8 @@ class TestCredentialsRetrieval(MockApiMixin, ProgramsApiConfigMixin, Credentials
         self.user = UserFactory()
         self.url = credential_config.internal_api_url + 'user_credentials/?username=' + self.user.username
 
+        cache.clear()
+
     @httpretty.activate
     def test_get_user_credentials(self):
         """Verify user credentials data can be retrieve."""
@@ -37,6 +40,22 @@ class TestCredentialsRetrieval(MockApiMixin, ProgramsApiConfigMixin, Credentials
 
         actual = get_user_credentials(self.user)
         self.assertEqual(actual, self.CREDENTIALS_API_RESPONSE['results'])
+
+    @httpretty.activate
+    def test_get_user_credentials_caching(self):
+        """Verify that when enabled, the cache is used."""
+        credential_config = self.create_credential_config(cache_ttl=1)
+        self.url = credential_config.internal_api_url + 'user_credentials/?username=' + self.user.username
+        self.mock_api(self.url, self.CREDENTIALS_API_RESPONSE)
+
+        # Warm up the cache.
+        get_user_credentials(self.user)
+
+        # Hit the cache.
+        get_user_credentials(self.user)
+
+        # Verify only one request was made.
+        self.assertEqual(len(httpretty.httpretty.latest_requests), 1)
 
     def test_get_user_credentials_credentials_disabled(self):
         """Verify behavior when Credentials is disabled."""

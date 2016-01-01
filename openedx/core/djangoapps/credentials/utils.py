@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 import logging
 
+from django.core.cache import cache
 from edx_rest_api_client.client import EdxRestApiClient
 
 from openedx.core.djangoapps.credentials.models import CredentialsApiConfig
@@ -28,6 +29,13 @@ def get_user_credentials(user):
         log.warning('Credentials configuration is disabled.')
         return credentials
 
+    use_cache = credentials_config.is_cache_enabled
+    if use_cache:
+        cache_key = credentials_config.CACHE_KEY + '.' + user.username
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+
     try:
         jwt = get_id_token(user, credentials_config.OAUTH2_CLIENT_NAME)
         api = EdxRestApiClient(credentials_config.internal_api_url, jwt=jwt)
@@ -49,6 +57,9 @@ def get_user_credentials(user):
     except Exception:  # pylint: disable=broad-except
         log.exception('Failed to retrieve credentials from the Credentials API.')
         return credentials
+
+    if use_cache:
+        cache.set(cache_key, credentials, credentials_config.cache_ttl)
 
     return credentials
 
