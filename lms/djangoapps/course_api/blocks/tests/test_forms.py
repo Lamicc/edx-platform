@@ -7,7 +7,6 @@ from urllib import urlencode
 from rest_framework.exceptions import PermissionDenied
 
 from opaque_keys.edx.locator import CourseLocator
-from openedx.core.djangoapps.util.forms import ExtendedNullBooleanField
 from openedx.core.djangoapps.util.test_forms import FormTestMixin
 from student.models import CourseEnrollment
 from student.tests.factories import UserFactory, CourseEnrollmentFactory
