@@ -228,38 +228,6 @@ def get_current_child(xmodule, min_depth=None):
     return child
 
 
-def redirect_to_course_position(course_module, content_depth):
-    """
-    Return a redirect to the user's current place in the course.
-
-    If this is the user's first time, redirects to COURSE/CHAPTER/SECTION.
-    If this isn't the users's first time, redirects to COURSE/CHAPTER,
-    and the view will find the current section and display a message
-    about reusing the stored position.
-
-    If there is no current position in the course or chapter, then selects
-    the first child.
-
-    """
-    urlargs = {'course_id': course_module.id.to_deprecated_string()}
-    chapter = get_current_child(course_module, min_depth=content_depth)
-    if chapter is None:
-        # oops.  Something bad has happened.
-        raise Http404("No chapter found when loading current position in course")
-
-    urlargs['chapter'] = chapter.url_name
-    if course_module.position is not None:
-        return redirect(reverse('courseware_chapter', kwargs=urlargs))
-
-    # Relying on default of returning first child
-    section = get_current_child(chapter, min_depth=content_depth - 1)
-    if section is None:
-        raise Http404("No section found when loading current position in course")
-
-    urlargs['section'] = section.url_name
-    return redirect(reverse('courseware_section', kwargs=urlargs))
-
-
 def save_child_position(seq_module, child_name):
     """
     child_name: url_name of the child
@@ -468,9 +436,12 @@ def _index_bulk_op(request, course_key, chapter, section, position):
                                             chapter=exam_chapter.url_name,
                                             section=exam_section.url_name)
 
-            # passing CONTENT_DEPTH avoids returning 404 for a course with an
-            # empty first section and a second section with content
-            return redirect_to_course_position(course_module, CONTENT_DEPTH)
+            # Otherwise, try to redirect to the user's last position in the courseware
+            __, section_url = get_last_accessed_courseware(course, request, CONTENT_DEPTH)
+            if section_url is not None:
+                return redirect(section_url)
+            else:
+                raise Http404("No section found when loading current position in course")
 
         chapter_descriptor = course.get_child_by(lambda m: m.location.name == chapter)
         if chapter_descriptor is not None:
@@ -718,7 +689,7 @@ def course_info(request, course_id):
         return render_to_response('courseware/info.html', context)
 
 
-def get_last_accessed_courseware(course, request):
+def get_last_accessed_courseware(course, request, min_depth=None):
     """
     Return a pair of the last-accessed courseware for this request's
     user, and a URL for that module.
@@ -729,16 +700,21 @@ def get_last_accessed_courseware(course, request):
     course_module = get_module_for_descriptor(
         request.user, request, course, field_data_cache, course.id, course=course
     )
-    chapter_module = get_current_child(course_module)
+    chapter_module = get_current_child(course_module, min_depth)
     if chapter_module is not None:
-        section_module = get_current_child(chapter_module)
+        section_module = get_current_child(chapter_module, min_depth - 1 if min_depth else None)
         if section_module is not None:
-            url = reverse('courseware_section', kwargs={
+            section_url = reverse('courseware_section', kwargs={
                 'course_id': unicode(course.id),
                 'chapter': chapter_module.url_name,
                 'section': section_module.url_name
             })
-            return (section_module, url)
+            return (section_module, section_url)
+        chapter_url = reverse('courseware_chapter', kwargs={
+            'course_id': unicode(course.id),
+            'chapter': chapter_module.url_name
+        })
+        return (chapter_module, chapter_url)
     return (None, None)
 
 

@@ -180,10 +180,11 @@ class TestNavigation(ModuleStoreTestCase, LoginEnrollmentTestCase):
                                kwargs={'course_id': self.course.id.to_deprecated_string()}))
 
         redirect_url = reverse(
-            'courseware_chapter',
+            'courseware_section',
             kwargs={
                 'course_id': self.course.id.to_deprecated_string(),
-                'chapter': 'Overview'
+                'chapter': 'Overview',
+                'section': 'Welcome'
             }
         )
         self.assertRedirects(resp, redirect_url)
@@ -216,10 +217,11 @@ class TestNavigation(ModuleStoreTestCase, LoginEnrollmentTestCase):
         resp = self.client.get(url)
 
         redirect_url = reverse(
-            'courseware_chapter',
+            'courseware_section',
             kwargs={
                 'course_id': self.course.id.to_deprecated_string(),
                 'chapter': 'factory_chapter',
+                'section': 'factory_section'
             }
         )
         self.assertRedirects(resp, redirect_url)
