@@ -1,3 +1,3 @@
 """
-Tests Organization API.
+Tests for organization API.
 """
