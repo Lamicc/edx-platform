@@ -54,6 +54,9 @@
                 height: $profile-image-dimension;
                 position: absolute;
                 top: 0;
+                text-shadow: none;
+                background: $black;
+                color: $white;
                 opacity: 0;
                 @include transition(all $tmg-f1 ease-in-out 0s);
 
@@ -61,7 +64,8 @@
                     color: $white;
                 }
 
-                &:focus {
+                &:focus,
+                &:hover {
                     @include show-hover-state();
                 }
             }
@@ -70,11 +74,13 @@
                 @include show-hover-state();
             }
 
-            .upload-button-icon, .upload-button-title {
+            .upload-button-icon,
+            .upload-button-title {
                 text-align: center;
                 transform: translateY(35px);
                 -webkit-transform: translateY(35px);
                 display: block;
+                background: $black;
                 color: $white;
                 margin-bottom: ($baseline/4);
                 line-height: 1.3em;
@@ -86,7 +92,10 @@
                 position: absolute;
                 top: 0;
                 @include left(0);
-                opacity: 0;
+                /*opacity: 0;*/
+                visibility: hidden;
+                background: $black;
+                color: $white;
                 cursor: pointer;
             }
 
@@ -102,16 +111,18 @@
                     box-shadow: none;
                     outline: 0;
                 }
-                &:focus {
-                    @include show-hover-state();
+                &:focus,
+                &:hover {
                     box-shadow: none;
                     outline: 0;
                     border: 2px dashed $link-color !important;
                 }
             }
 
-            &:hover, &:focus {
-                .u-field-upload-button, .u-field-remove-button {
+            &:hover,
+            &:focus {
+                .u-field-upload-button,
+                .u-field-remove-button {
                     @include show-hover-state();
                 }
             }

@@ -39,7 +39,7 @@
 
 @mixin show-hover-state() {
     opacity: 1;
-    background-color: $shadow-d2;
+    background-color: $black;
     border-radius: ($baseline/4);
 }
 
