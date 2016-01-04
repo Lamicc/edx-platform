@@ -1,5 +1,5 @@
 """
-Tests Organization API.
+Tests for organization API.
 """
 import json
 import unittest
@@ -26,7 +26,6 @@ class OrganizationsAPITests(TestCase):
         """
         super(OrganizationsAPITests, self).setUp()
 
-        self.password = 'password'
         self.organization = {
             'name': 'Test Organization',
             'short_name': 'Orgx',
@@ -35,7 +34,7 @@ class OrganizationsAPITests(TestCase):
         self.url = reverse(
             'organization_api:get_organization', kwargs={'organization_key': self.organization['short_name']}
         )
-        self.user = UserFactory(password=self.password, is_staff=False)
+        self.user = UserFactory()
 
     def test_authentication_required(self):
         """
@@ -48,15 +47,13 @@ class OrganizationsAPITests(TestCase):
         """
         Verify the endpoint supports session authentication.
         """
-        self.client.login(username=self.user.username, password=self.password)
-
+        self.client.login(username=self.user.username, password=self.user.password)
         response = self.client.get(self.url)
         # Assert that org doesn't exist.
         self.assertEqual(response.status_code, 404)
 
         # Add organization.
         organizations_helpers.add_organization(organization_data=self.organization)
-
         response = self.client.get(self.url)
         # Assert that user can get organization data.
         self.assertEqual(response.status_code, 200)
@@ -71,14 +68,12 @@ class OrganizationsAPITests(TestCase):
         headers = {
             'HTTP_AUTHORIZATION': 'Bearer ' + access_token
         }
-
         response = self.client.get(self.url, **headers)
         # Assert that org doesn't exist.
         self.assertEqual(response.status_code, 404)
 
         # Add organization.
         organizations_helpers.add_organization(organization_data=self.organization)
-
         response = self.client.get(self.url, **headers)
         # Assert that user can get organization data.
         self.assertEqual(response.status_code, 200)

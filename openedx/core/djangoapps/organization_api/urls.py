@@ -12,7 +12,7 @@ ORGANIZATION_KEY_PATTERN = r'(?P<organization_key>[^/]*)'
 urlpatterns = patterns(
     '',
     url(
-        r'^v1/get_organization/{}/$'.format(ORGANIZATION_KEY_PATTERN),
+        r'^v1/organization/{}/$'.format(ORGANIZATION_KEY_PATTERN),
         views.OrganizationsView.as_view(),
         name='get_organization'
     ),
