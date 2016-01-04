@@ -1,0 +1,15 @@
+// studio - edx-icons
+// ====================
+
+// Table of Contents
+// * +Libs and Resets
+// * +Vendor and Rebase
+// * +edx-fonts
+
+
+// +Libs and Resets - *do not edit*
+// ====================
+@import 'bourbon/bourbon'; // lib - bourbon
+@import 'vendor/bi-app/bi-app-ltr'; // set the layout for left to right languages (for icons the same for both layouts)
+
+@import '../../../common/static/sass/assets/edx-icons'; // load the edx-icons fonts
