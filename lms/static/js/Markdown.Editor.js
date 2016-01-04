@@ -28,13 +28,13 @@
     // The text that appears on the upper part of the dialog box when
     // entering links.
     var linkDialogText = "<b>" + gettext("Insert Hyperlink") + "</b>",
-        linkUrlLabel = "URL ('http://google.com/')",
-        linkDestinationLabel = "Description of link destination ('google')",
+        linkUrlLabel = "URL (e.g. 'http://google.com/')",
+        linkDestinationLabel = "Description of link destination (e.g. 'google')",
         linkDefaultText = "http://"; // The default text that appears in input
 
     var imageDialogText = "<b>" + gettext("Insert Image (upload file or type url)") + "</b>",
-        imageUrlLabel = "http://example.com/images/diagram.jpg ",
-        imageDestinationLabel = "Description of image",
+        imageUrlLabel = "URL (e.g. 'http://example.com/images/clouds.jpg')",
+        imageDestinationLabel = "Description of image (e.g. 'Sky with clouds')",
         imageDefaultText = "http://"; // The default text that appears in input
 
     var defaultHelpHoverTitle = gettext("Markdown Editing Help");
@@ -1112,6 +1112,20 @@
             style.marginLeft = style.marginRight = "auto";
             form.appendChild(urlInput);
 
+            // The choose file button if prompt type is 'image'
+
+            if (imageUploadHandler) {
+              var chooseFile = doc.createElement("input");
+              chooseFile.type = "file";
+              chooseFile.name = "file-upload";
+              chooseFile.id = "file-upload";
+              chooseFile.onchange = function() {
+                imageUploadHandler(this, urlInput);
+              };
+              form.appendChild(doc.createElement("br"));
+              form.appendChild(chooseFile);
+            }
+
             // The dialog text.
             var descriptionLabel = doc.createElement("label");
             descriptionLabel.innerHTML = descriptionLabelText;
@@ -1128,22 +1142,6 @@
             style.width = "80%";
             style.marginLeft = style.marginRight = "auto";
             form.appendChild(descInput);
-
-
-            // The choose file button if prompt type is 'image'
-
-            if (imageUploadHandler) {
-              var chooseFile = doc.createElement("input");
-              chooseFile.type = "file";
-              chooseFile.name = "file-upload";
-              chooseFile.id = "file-upload";
-              chooseFile.onchange = function() {
-                imageUploadHandler(this, input);
-              };
-              form.appendChild(doc.createElement("br"));
-              form.appendChild(chooseFile);
-            }
-
 
             // The ok button
             var okButton = doc.createElement("input");
