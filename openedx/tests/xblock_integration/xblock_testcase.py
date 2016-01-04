@@ -12,7 +12,7 @@ At this point, we support:
 1. Python unit testing
 2. Event publish testing
 3. Testing multiple students
-4. Testing multiple XBloccks on the same page.
+4. Testing multiple XBlocks on the same page.
 
 We have spec'ed out how to do acceptance testing, but have not
 implemented it yet. We have not spec'ed out JavaScript testing,
@@ -33,7 +33,10 @@ Our next steps would be to:
   exist)
 """
 
+import StringIO
 import collections
+#import defusedxml
+from bs4 import BeautifulSoup
 import json
 import mock
 import sys
@@ -96,7 +99,6 @@ class XBlockEventTestMixin(object):
 
         """
         super(XBlockEventTestMixin, self).setUp()
-        print >> sys.stderr, "Setup XBETM"
         saved_init = lms.djangoapps.lms_xblock.runtime.LmsModuleSystem.__init__
 
         def patched_init(runtime_self, **kwargs):
@@ -185,7 +187,6 @@ class GradePublishTestMixin(object):
         Hot-patch the grading emission system to capture grading events.
         '''
         super(GradePublishTestMixin, self).setUp()
-        print >> sys.stderr, "Setup GPTM"
         def capture_score(user_id, usage_key, score, max_score):
             '''
             Hot-patch which stores scores in a local array instead of the
@@ -225,12 +226,12 @@ class XBlockScenarioTestCaseMixin(object):
         Create a page with two of the XBlock on it
         """
         super(XBlockScenarioTestCaseMixin, cls).setUpClass()
-        print >> sys.stderr, "Setup Scen"
 
         cls.course = CourseFactory.create(
             display_name='XBlock_Test_Course'
         )
         cls.scenario_urls = {}
+        cls.xblocks = {}
         with cls.store.bulk_operations(cls.course.id, emit_signals=False):
             for chapter_config in cls.test_configuration:
                 chapter = ItemFactory.create(
@@ -248,12 +249,14 @@ class XBlockScenarioTestCaseMixin(object):
                     display_name='New Unit',
                     category='vertical'
                 )
+
                 for xblock_config in chapter_config['xblocks']:
-                    ItemFactory.create(
+                    xblock = ItemFactory.create(
                         parent=unit,
                         category=xblock_config['blocktype'],
                         display_name=xblock_config['urlname']
                     )
+                    cls.xblocks[xblock_config['urlname']] = xblock
 
                 scenario_url = unicode(reverse(
                     'courseware_section',
@@ -286,7 +289,6 @@ class XBlockStudentTestCaseMixin(object):
         standardize if this is more hassle than it's worth.
         """
         super(XBlockStudentTestCaseMixin, self).setUp()
-        print >> sys.stderr, "Setup Stud"
         for idx, student in enumerate(self.student_list):
             username = "u{}".format(idx)
             self._enroll_user(username, student['email'], student['password'])
@@ -317,7 +319,6 @@ class XBlockStudentTestCaseMixin(object):
         password = self.student_list[user_id]['password']
 
         # ... and log in as the appropriate user
-        print >>sys.stderr, user_id, email, password
         self.login(email, password)
 
 
@@ -349,8 +350,14 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
         # So, skip the test class here if we are not in the LMS.
         if settings.ROOT_URLCONF != 'lms.urls':
             raise unittest.SkipTest('Test only valid in lms')
-
+        print >> sys.stderr, "Setup test case"
         super(XBlockTestCase, cls).setUpClass()
+
+    def setUp(self):
+        """
+        Call setups of all parents
+        """
+        super(XBlockTestCase, self).setUp()
 
     def get_handler_url(self, handler, xblock_name=None):
         """
@@ -388,13 +395,53 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
                     xblock_type = block["blocktype"]
 
         key = unicode(self.course.id.make_usage_key(xblock_type, xblock_name))
-
         return reverse('xblock_handler', kwargs={
             'course_id': unicode(self.course.id),
             'usage_id': key,
             'handler': handler,
             'suffix': ''
         })
+
+    def extract_block(self, content, urlname):
+        '''This will extract the HTML of a rendered XBlock from a 
+        page. This should be simple. This should just be (in lxml):
+            usage_id = self.xblocks[block_urlname].scope_ids.usage_id
+            encoded_id = usage_id.replace(";_", "/")
+        Followed by:
+            page_xml = defusedxml.ElementTree.parse(StringIO.StringIO(response_content))
+            page_xml.find("//[@data-usage-id={usage}]".format(usage=encoded_id))
+        or
+            soup_html = BeautifulSoup(response_content, 'html.parser')
+            soup_html.find(**{"data-usage-id": encoded_id})
+
+        Why isn't it? Well, the blocks are stored in a rather funky
+        way in learning sequences. Ugh. Easy enough, populate the
+        course with just verticals. Well, that doesn't work
+        either. The whole test infrastructure populates courses with
+        Studio AJAX calls, and Studio has broken support for anything
+        other than course/sequence/vertical/block.
+
+        So until we either fix Studio to support most course 
+        structures, fix learning sequences to not have HTML-in-JS
+        (which causes many other problems as well -- including
+        user-facing bugs), or fix the test infrastructure to
+        create courses from OLX, we're stuck with this little hack.
+        '''
+        usage_id = self.xblocks[urlname].scope_ids.usage_id
+        content = eval(repr(content))
+        print >>sys.stderr, repr(content)
+        soup_html = BeautifulSoup(content)
+        xblock_html = unicode(soup_html.find(id="seq_contents_0"))
+
+        print >> sys.stderr, "========="
+        print >> sys.stderr, len(xblock_html)
+        print >> sys.stderr, "Content type:", type(content)
+        print >> sys.stderr, "Content:", soup_html.encode('utf-8')
+        print >> sys.stderr, "id:", usage_id
+        print >> sys.stderr, "---------"
+        print >> sys.stderr, "XBHTML", xblock_html.encode('utf-8')
+        print >> sys.stderr, "========="
+        return xblock_html
 
     def render_block(self, block_urlname):
         '''
@@ -412,9 +459,14 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
                                                 'content'])
         url = self.scenario_urls[section]
         response = self.client.get(url)
+
         html_response.status_code = response.status_code
-        html_response.content = response.content
-        print response.content
+        response_content = response.content.decode('utf-8')
+        html_response.content = self.extract_block(response_content,
+                                                   block_urlname)
+#
+
+#        xblock_xml = ".format(usage=usage_id))
         return html_response
 
     def _containing_section(self, block_urlname):
