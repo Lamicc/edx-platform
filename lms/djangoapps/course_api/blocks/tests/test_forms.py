@@ -102,18 +102,27 @@ class TestBlockListGetForm(FormTestMixin, SharedModuleStoreTestCase):
 
     #-- user
 
-    @ddt.data("True", "true", True, "False", "false", False, None)
-    def test_no_user_staff(self, all_blocks_value):
+    @ddt.data("True", "true", True)
+    def test_no_user_all_blocks_true(self, all_blocks_value):
         self.initial = {'requesting_user': self.staff}
 
         self.form_data.pop('username')
-        if all_blocks_value is not None:
-            self.form_data['all_blocks'] = all_blocks_value
+        self.form_data['all_blocks'] = all_blocks_value
+        self.get_form(expected_valid=True)
 
-        if ExtendedNullBooleanField.to_python(all_blocks_value):
-            self.get_form(expected_valid=True)
-        else:
-            self.assert_error('username', "This field is required unless all_blocks is requested.")
+    @ddt.data("False", "false", False)
+    def test_no_user_all_blocks_false(self, all_blocks_value):
+        self.initial = {'requesting_user': self.staff}
+
+        self.form_data.pop('username')
+        self.form_data['all_blocks'] = all_blocks_value
+        self.assert_error('username', "This field is required unless all_blocks is requested.")
+
+    def test_no_user_all_blocks_none(self):
+        self.initial = {'requesting_user': self.staff}
+
+        self.form_data.pop('username')
+        self.assert_error('username', "This field is required unless all_blocks is requested.")
 
     def test_no_user_non_staff(self):
         self.form_data.pop('username')

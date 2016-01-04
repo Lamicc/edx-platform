@@ -71,11 +71,10 @@ class BlockListGetForm(Form):
 
         try:
             usage_key = UsageKey.from_string(usage_key)
-            usage_key = usage_key.replace(course_key=modulestore().fill_in_run(usage_key.course_key))
         except InvalidKeyError:
             raise ValidationError("'{}' is not a valid usage key.".format(unicode(usage_key)))
 
-        return usage_key
+        return usage_key.replace(course_key=modulestore().fill_in_run(usage_key.course_key))
 
     def clean(self):
         """
@@ -110,16 +109,14 @@ class BlockListGetForm(Form):
         requested_username = cleaned_data.get('username', None)
 
         if not requested_username:
-            return self._clean_no_user(requesting_user, cleaned_data, course_key)
-
+            return self._verify_no_user(requesting_user, cleaned_data, course_key)
         elif requesting_user.username.lower() == requested_username.lower():
-            return self._clean_self_user(requesting_user, course_key)
-
+            return self._verify_requesting_user(requesting_user, course_key)
         else:
-            return self._clean_other_user(requesting_user, requested_username, course_key)
+            return self._verify_other_user(requesting_user, requested_username, course_key)
 
     @staticmethod
-    def _clean_no_user(requesting_user, cleaned_data, course_key):
+    def _verify_no_user(requesting_user, cleaned_data, course_key):
         """
         Verifies form for when no username is specified, including permissions.
         """
@@ -139,7 +136,7 @@ class BlockListGetForm(Form):
         return None
 
     @staticmethod
-    def _clean_self_user(requesting_user, course_key):
+    def _verify_requesting_user(requesting_user, course_key):
         """
         Verifies whether the requesting user can access blocks in the course.
         """
@@ -151,7 +148,7 @@ class BlockListGetForm(Form):
         return requesting_user
 
     @staticmethod
-    def _clean_other_user(requesting_user, requested_username, course_key):
+    def _verify_other_user(requesting_user, requested_username, course_key):
         """
         Verifies whether the requesting user can access another user's view of
         the blocks in the course.

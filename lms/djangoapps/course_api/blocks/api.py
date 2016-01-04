@@ -26,7 +26,7 @@ def get_blocks(
         request (HTTPRequest): Used for calling django reverse.
         usage_key (UsageKey): Identifies the root block of interest.
         user (User): Optional user object for whom the blocks are being
-            retrieved.
+            retrieved. If None, blocks are returned regardless of access checks.
         depth (integer or None): Identifies the depth of the tree to return
             starting at the root block.  If None, the entire tree starting at
             the root is returned.
