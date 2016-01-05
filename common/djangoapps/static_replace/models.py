@@ -19,7 +19,7 @@ class AssetBaseUrlConfig(ConfigurationModel):
         return cls.current().base_url
 
     def __repr__(self):
-        return '<AssetBaseUrlConfig(base_url=%s)' % self.get_base_url()
+        return '<AssetBaseUrlConfig(base_url={base_url})>'.format(base_url=self.get_base_url())
 
     def __unicode__(self):
         return unicode(repr(self))

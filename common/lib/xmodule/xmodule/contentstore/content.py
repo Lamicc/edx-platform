@@ -158,18 +158,24 @@ class StaticContent(object):
         if path.startswith('/static/'):
             path = path[len('/static/'):]
 
+        path = path.lstrip('/')
+
         asset_key = None
 
         # First, try to parse the path as is. This will catch any /c4x/*-style paths.
+        #try:
+        #    asset_key = AssetKey.from_string(path)
+        #except InvalidKeyError:
+        #    # Do we have a leading forward slash? Strip it and try again.
+        #    # This will catch asset key paths e.g. /asset-v1:.....
+        #    try:
+        #        asset_key = AssetKey.from_string(path[1:])
+        #    except InvalidKeyError:
+        #        pass
         try:
             asset_key = AssetKey.from_string(path)
         except InvalidKeyError:
-            # Do we have a leading forward slash? Strip it and try again.
-            # This will catch asset key paths e.g. /asset-v1:.....
-            try:
-                asset_key = AssetKey.from_string(path[1:])
-            except InvalidKeyError:
-                pass
+            pass
 
         # If asset_key is still empty, just let compute_location figure it out.
         # It's most likely a path like /image.png or something.
@@ -202,13 +208,14 @@ class StaticContent(object):
         asset_key = StaticContent.get_asset_key_from_path(course_key, relative_path)
 
         # Check the status of the asset to see if this can be served via CDN aka publicly.
-        is_locked = False
+        serve_from_cdn = False
         try:
             content = AssetManager.find(asset_key, as_stream=True)
-            is_locked = getattr(content, "locked", False)
+            is_locked = getattr(content, "locked", True)
+            serve_from_cdn = False if is_locked else True
         except (ItemNotFoundError, NotFoundError):
             # If we can't find the item, just treat it as if it's locked.
-            is_locked = True
+            serve_from_cdn = False
 
         # Update any query parameter values that have asset paths in them. This is for assets that
         # require their own after-the-fact values, like a Flash file that needs the path of a config
@@ -223,7 +230,7 @@ class StaticContent(object):
                 updated_query_params.append((query_name, query_value))
 
         serialized_asset_key = StaticContent.serialize_asset_key_with_slash(asset_key)
-        base_url = '' if is_locked else base_url
+        base_url = base_url if serve_from_cdn else ''
 
         return urlunparse((None, base_url, serialized_asset_key, params, urlencode(updated_query_params), fragment))
 
