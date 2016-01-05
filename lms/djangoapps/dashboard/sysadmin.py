@@ -156,7 +156,7 @@ class Users(SysadminDashboardView):
             msg = _('All ok!')
         return msg
 
-    def create_user(self, uname, name, password=None):
+    def create_user(self, uname, email, name, password=None):
         """ Creates a user (both SSL and regular)"""
 
         if not uname:
@@ -188,8 +188,6 @@ class Users(SysadminDashboardView):
         else:
             if not password:
                 return _('Password must be supplied if not using certificates')
-
-            email = uname
 
             if '@' not in email:
                 msg += _('email address required (not username)')
@@ -315,11 +313,12 @@ class Users(SysadminDashboardView):
             self.datatable = {}
         elif action == 'create_user':
             uname = request.POST.get('student_uname', '').strip()
+            email = request.POST.get('student_email', '').strip()
             name = request.POST.get('student_fullname', '').strip()
             password = request.POST.get('student_password', '').strip()
             self.msg = u'<h4>{0}</h4><p>{1}</p><hr />{2}'.format(
                 _('Create User Results'),
-                self.create_user(uname, name, password), self.msg)
+                self.create_user(uname, email, name, password), self.msg)
         elif action == 'del_user':
             uname = request.POST.get('student_uname', '').strip()
             self.msg = u'<h4>{0}</h4><p>{1}</p><hr />{2}'.format(
